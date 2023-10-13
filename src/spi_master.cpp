@@ -216,14 +216,19 @@ void spi_loop()
                 std::vector<std::string> parsedData;
                 int len = split(userInput, parsedData, ' ');
 
-                if (parsedData.at(0) == "all")
+                // if (parsedData.at(0) == "all")
+                if (!parsedData.at(0).compare("all"))
                 {
                     if (parsedData.size() > 1)
                     {
                         if (isFloat(parsedData.at(1).c_str()))
                         {
+                            float angle = strtof(parsedData.at(1).c_str(), NULL);
                             Serial.print("All motors position: ");
                             Serial.println(strtof(parsedData.at(1).c_str(), NULL));
+                            for (int i = 0; i < 6; i++){
+                                spi_tx_buffer[i] = (int32_t) angle;
+                            }
                         }
                     }
                 }
@@ -240,7 +245,7 @@ void spi_loop()
                             float angle = strtof(parsedData.at(i).c_str(), NULL);
                             Serial.print(" Angle: ");
                             Serial.println(angle);
-                            spi_tx_buffer[i] = angle;
+                            spi_tx_buffer[i] = (int32_t) angle;
                         }
                         else
                         {
@@ -257,7 +262,7 @@ void spi_loop()
                 GC_SERCOM1_SPI_SS0_PULL();
                 hardware_intflag = false;
             }
-            else
+            else if(isalnum(input) || input == '-' || input == ' ')
             {
                 userInput.push_back(input);
             }
