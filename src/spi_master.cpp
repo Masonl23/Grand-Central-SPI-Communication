@@ -196,10 +196,20 @@ bool isFloat(std::string line)
     strtof(line.c_str(), &p);
     return *p == 0;
 }
+float ieee_float(uint32_t f)
+{
+    static_assert(sizeof(float) == sizeof f, "`float` has a weird size.");
+    float ret;
+    memcpy(&ret, &f, sizeof(float));
+    return ret;
+}
 
 std::string userInput;
-void spi_loop()
+
+unsigned long lastTime = 0;
+void loop(void)
 {
+
     switch (dstate)
     {
     case IDLE:
@@ -212,11 +222,12 @@ void spi_loop()
             {
                 // new line feed
                 Serial.print('\n');
+
                 // parse strings
                 std::vector<std::string> parsedData;
                 int len = split(userInput, parsedData, ' ');
 
-                // if (parsedData.at(0) == "all")
+                // check if theres compare data
                 if (!parsedData.at(0).compare("all"))
                 {
                     if (parsedData.size() > 1)
@@ -224,35 +235,40 @@ void spi_loop()
                         if (isFloat(parsedData.at(1).c_str()))
                         {
                             float angle = strtof(parsedData.at(1).c_str(), NULL);
-                            Serial.print("All motors position: ");
-                            Serial.println(strtof(parsedData.at(1).c_str(), NULL));
-                            for (int i = 0; i < 6; i++){
-                                spi_tx_buffer[i] = (int32_t) angle;
+                            angle *= 10;
+                            angle = truncf(angle);
+                            for (int i = 0; i < 6; i++)
+                            {
+                                spi_tx_buffer[i] = (int32_t)angle;
+                                Serial.print("Motor ");
+                                Serial.print(i);
+                                Serial.print(" Angle: ");
+                                Serial.println(angle/10.0);
                             }
                         }
                     }
                 }
                 else
                 {
-
                     // check lengths
                     for (size_t i = 0; i < parsedData.size(); i++)
                     {
-                        Serial.print("Motor ");
-                        Serial.print(i);
                         if (isFloat(parsedData.at(i).c_str()))
                         {
+                            Serial.print("Motor ");
+                            Serial.print(i);
+                            std::string curString = parsedData.at(i).c_str();
                             float angle = strtof(parsedData.at(i).c_str(), NULL);
+                            angle *= 10;
+                            angle = truncf(angle);
+
                             Serial.print(" Angle: ");
-                            Serial.println(angle);
-                            spi_tx_buffer[i] = (int32_t) angle;
-                        }
-                        else
-                        {
-                            Serial.println(" not float");
+                            Serial.println(angle/10.0);
+                            spi_tx_buffer[i] = (int32_t)angle;
                         }
                     }
                 }
+
                 // reset input
                 userInput.clear();
 
@@ -262,22 +278,12 @@ void spi_loop()
                 GC_SERCOM1_SPI_SS0_PULL();
                 hardware_intflag = false;
             }
-            else if(isalnum(input) || input == '-' || input == ' ')
+            // add to string only if character and not line escape
+            else if (isalnum(input) || input == '-' || input == ' ' || input == '.')
             {
                 userInput.push_back(input);
             }
         }
-        // if (Serial.available())
-        // {
-        //     // userInput = Serial.readStringUntil('\n');
-        //     // Serial.println(userInput);
-        //     Serial.read();
-
-        //     dstate = SS_LOW_WAIT;
-        //     TC_force_retrigger(TC0);
-        //     GC_SERCOM1_SPI_SS0_PULL();
-        //     hardware_intflag = false;
-        // }
 
         break;
     }
@@ -297,9 +303,9 @@ void spi_loop()
         ML_DMAC_CHANNEL_RESUME(rx_dmac_chnum);
         ML_DMAC_CHANNEL_RESUME(tx_dmac_chnum);
 
-        Serial.print(millis());
-        Serial.print(" ");
-        Serial.println("XFER");
+        // Serial.print(millis());
+        // Serial.print(" ");
+        // Serial.println("XFER");
         dstate = XFER_DMAC;
 
         break;
@@ -322,76 +328,15 @@ void spi_loop()
         {
             dstate = IDLE;
             GC_SERCOM1_SPI_SS0_PUSH();
-            Serial.print("Data: ");
-            for (uint8_t i = 0; i < SPI_RX_BUFFER_LEN; i++)
-            {
-                Serial.printf("%x, ", spi_rx_buffer[i]);
-            }
+            // Serial.print("Data: ");
+            // for (uint8_t i = 0; i < SPI_RX_BUFFER_LEN; i++)
+            // {
+            //     Serial.printf("%x, ", spi_rx_buffer[i]);
+            // }
             ss_timer_intflag = false;
         }
         break;
     }
     }
-}
-
-unsigned long lastTime = 0;
-void loop(void)
-{
-
-    spi_loop();
-
-    // if (Serial.available())
-    // {
-    //     char input = Serial.read();
-    //     Serial.print(input);
-    //     if (input == '\r')
-    //     {
-    //         // new line feed
-    //         Serial.print('\n');
-    //         // parse strings
-    //         std::vector<std::string> parsedData;
-    //         int len = split(userInput, parsedData, ' ');
-    //         // Serial.println(userInput.c_str());
-    //         // Serial.print(" Length: ");
-    //         // Serial.println(len);
-
-    //         if (parsedData.at(0) == "all")
-    //         {
-    //             if(parsedData.size() > 1){
-    //                 if(isFloat(parsedData.at(1).c_str())){
-    //                     Serial.print("All motors position: "); Serial.println(strtof(parsedData.at(1).c_str(),NULL));
-    //                 }
-
-    //             }
-    //         }
-    //         else
-    //         {
-
-    //             // check lengths
-    //             for (size_t i = 0; i < parsedData.size(); i++)
-    //             {
-    //                 Serial.print("Motor ");
-    //                 Serial.print(i);
-    //                 if (isFloat(parsedData.at(i).c_str()))
-    //                 {
-    //                     float angle = strtof(parsedData.at(i).c_str(), NULL);
-    //                     Serial.print(" Angle: ");
-    //                     Serial.println(angle);
-    //                     spi_tx_buffer[i] = (uint32_t) angle;
-    //                 }
-    //                 else
-    //                 {
-    //                     Serial.println(" not float");
-    //                 }
-    //             }
-    //         }
-    //         // reset input
-    //         userInput.clear();
-    //     }
-    //     else
-    //     {
-    //         userInput.push_back(input);
-    //     }
-    // }
 }
 #endif

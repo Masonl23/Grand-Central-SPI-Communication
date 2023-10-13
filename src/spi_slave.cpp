@@ -112,6 +112,14 @@ void DMAC_1_Handler(void)
     }
 }
 
+float ieee_float(uint32_t f)
+{
+    static_assert(sizeof(float) == sizeof f, "`float` has a weird size.");
+    float ret;
+    memcpy(&ret, &f, sizeof(float));
+    return ret;
+}
+
 
 void loop(void)
 {
@@ -126,10 +134,14 @@ void loop(void)
     if(dmac_rx_intflag & dmac_tx_intflag)
     {
         Serial.print('\n');
+        Serial.println(F("SPI DATA RECIEVED:"));
         for(uint8_t i=0; i < SPI_RX_BUFFER_LEN; i++)
         {
             // Serial.printf("%f, ", spi_rx_buffer[i]);
             float value = (int32_t) spi_rx_buffer[i];
+            value /=10;
+            // float value = ieee_float(spi_rx_buffer[i]);
+
             Serial.print("Motor "); Serial.print(i); Serial.print(' ');
             Serial.println(value);
         }
