@@ -5,6 +5,9 @@
 
 #include <ml_dmac.h>
 
+/**
+ * set interrupt for DMAC
+*/
 void DMAC_channel_intenset(const ml_dmac_chnum_t channel, const IRQn_Type IRQn, const uint8_t intmsk, const uint32_t priority_level)
 {
 
