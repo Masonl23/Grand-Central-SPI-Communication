@@ -13,6 +13,7 @@
 
 // build flag so we can select which program to upload
 #ifndef BUILD_SERCOM_MASTER
+// #ifdef BUILD_SERCOM_SLAVE
 
 static DmacDescriptor base_descriptor[3] __attribute__((aligned(16)));
 static volatile DmacDescriptor wb_descriptor[3] __attribute__((aligned(16)));
@@ -114,20 +115,25 @@ void DMAC_1_Handler(void)
 
 void loop(void)
 {
-    if(ssl_intflag)
-    {
-        ssl_intflag = false;
-        Serial.print(millis()); Serial.print(" ");
-        Serial.println("ssl pulled");
-    }
+    // if(ssl_intflag)
+    // {
+    //     ssl_intflag = false;
+    //     Serial.print(millis()); Serial.print(" ");
+    //     Serial.println("ssl pulled");
+    // }
 
     // if rx and tx are complete transferring data when read out new data in RX from master
     if(dmac_rx_intflag & dmac_tx_intflag)
     {
+        Serial.print('\n');
         for(uint8_t i=0; i < SPI_RX_BUFFER_LEN; i++)
         {
-            Serial.printf("%x, ", spi_rx_buffer[i]);
+            // Serial.printf("%f, ", spi_rx_buffer[i]);
+            float value = (int32_t) spi_rx_buffer[i];
+            Serial.print("Motor "); Serial.print(i); Serial.print(' ');
+            Serial.println(value);
         }
+        Serial.print('\n');
         dmac_rx_intflag = dmac_tx_intflag = false;
     }
 
