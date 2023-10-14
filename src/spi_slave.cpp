@@ -137,10 +137,8 @@ void loop(void)
         Serial.println(F("SPI DATA RECIEVED:"));
         for(uint8_t i=0; i < SPI_RX_BUFFER_LEN; i++)
         {
-            // Serial.printf("%f, ", spi_rx_buffer[i]);
             float value = (int32_t) spi_rx_buffer[i];
             value /=10;
-            // float value = ieee_float(spi_rx_buffer[i]);
 
             Serial.print("Motor "); Serial.print(i); Serial.print(' ');
             Serial.println(value);
